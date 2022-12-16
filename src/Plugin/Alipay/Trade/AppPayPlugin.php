@@ -11,12 +11,14 @@ use Yansongda\Pay\Parser\ResponseParser;
 use Yansongda\Pay\Rocket;
 use Yansongda\Pay\Traits\SupportServiceProviderTrait;
 
+/**
+ * @see https://opendocs.alipay.com/open/02e7gq?scene=common
+ */
 class AppPayPlugin implements PluginInterface
 {
     use SupportServiceProviderTrait;
 
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
@@ -24,7 +26,7 @@ class AppPayPlugin implements PluginInterface
     {
         Logger::info('[alipay][AppPayPlugin] 插件开始装载', ['rocket' => $rocket]);
 
-        $this->loadServiceProvider($rocket);
+        $this->loadAlipayServiceProvider($rocket);
 
         $rocket->setDirection(ResponseParser::class)
             ->mergePayload([

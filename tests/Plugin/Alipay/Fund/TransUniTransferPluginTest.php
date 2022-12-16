@@ -9,14 +9,21 @@ use Yansongda\Pay\Tests\TestCase;
 
 class TransUniTransferPluginTest extends TestCase
 {
+    protected $plugin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->plugin = new TransUniTransferPlugin();
+    }
+
     public function testNormal()
     {
         $rocket = new Rocket();
         $rocket->setParams([]);
 
-        $plugin = new TransUniTransferPlugin();
-
-        $result = $plugin->assembly($rocket, function ($rocket) { return $rocket; });
+        $result = $this->plugin->assembly($rocket, function ($rocket) { return $rocket; });
 
         self::assertNotEquals(ResponseParser::class, $result->getDirection());
         self::assertStringContainsString('alipay.fund.trans.uni.transfer', $result->getPayload()->toJson());

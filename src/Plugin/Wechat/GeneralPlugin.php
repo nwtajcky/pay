@@ -7,6 +7,10 @@ namespace Yansongda\Pay\Plugin\Wechat;
 use Closure;
 use Psr\Http\Message\RequestInterface;
 use Yansongda\Pay\Contract\PluginInterface;
+
+use function Yansongda\Pay\get_wechat_base_uri;
+use function Yansongda\Pay\get_wechat_config;
+
 use Yansongda\Pay\Logger;
 use Yansongda\Pay\Pay;
 use Yansongda\Pay\Request;
@@ -17,7 +21,6 @@ abstract class GeneralPlugin implements PluginInterface
     /**
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      * @throws \Yansongda\Pay\Exception\ContainerException
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      */
     public function assembly(Rocket $rocket, Closure $next): Rocket
     {
@@ -32,7 +35,6 @@ abstract class GeneralPlugin implements PluginInterface
     }
 
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
@@ -51,7 +53,6 @@ abstract class GeneralPlugin implements PluginInterface
     }
 
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
@@ -59,7 +60,7 @@ abstract class GeneralPlugin implements PluginInterface
     {
         $params = $rocket->getParams();
 
-        $url = Pay::MODE_SERVICE == get_wechat_config($params)->get('mode') ? $this->getPartnerUri($rocket) : $this->getUri($rocket);
+        $url = Pay::MODE_SERVICE === (get_wechat_config($params)['mode'] ?? null) ? $this->getPartnerUri($rocket) : $this->getUri($rocket);
 
         return 0 === strpos($url, 'http') ? $url : (get_wechat_base_uri($params).$url);
     }
@@ -68,7 +69,7 @@ abstract class GeneralPlugin implements PluginInterface
     {
         return [
             'Accept' => 'application/json, text/plain, application/x-gzip',
-            'User-Agent' => 'yansongda/pay-v3.0',
+            'User-Agent' => 'yansongda/pay-v3',
             'Content-Type' => 'application/json; charset=utf-8',
         ];
     }

@@ -8,7 +8,12 @@ use Closure;
 use Yansongda\Pay\Contract\PluginInterface;
 use Yansongda\Pay\Exception\Exception;
 use Yansongda\Pay\Exception\InvalidResponseException;
+
+use function Yansongda\Pay\get_wechat_config;
+use function Yansongda\Pay\get_wechat_sign;
+
 use Yansongda\Pay\Logger;
+use Yansongda\Pay\Pay;
 use Yansongda\Pay\Rocket;
 use Yansongda\Supports\Collection;
 use Yansongda\Supports\Config;
@@ -17,7 +22,6 @@ use Yansongda\Supports\Str;
 class InvokePrepayPlugin implements PluginInterface
 {
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\InvalidResponseException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
@@ -48,7 +52,6 @@ class InvokePrepayPlugin implements PluginInterface
     }
 
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\InvalidConfigException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
@@ -64,7 +67,6 @@ class InvokePrepayPlugin implements PluginInterface
     }
 
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      * @throws \Exception
@@ -72,7 +74,7 @@ class InvokePrepayPlugin implements PluginInterface
     protected function getInvokeConfig(Rocket $rocket, string $prepayId): Config
     {
         $config = new Config([
-            'appId' => $this->getAppid($rocket),
+            'appId' => $this->getAppId($rocket),
             'timeStamp' => time().'',
             'nonceStr' => Str::random(32),
             'package' => 'prepay_id='.$prepayId,
@@ -85,14 +87,23 @@ class InvokePrepayPlugin implements PluginInterface
     }
 
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
-    protected function getAppid(Rocket $rocket): string
+    protected function getAppId(Rocket $rocket): string
     {
         $config = get_wechat_config($rocket->getParams());
+        $payload = $rocket->getPayload();
 
-        return $config->get('mp_app_id', '');
+        if (Pay::MODE_SERVICE === ($config['mode'] ?? null) && $payload->has('sub_appid')) {
+            return $payload->get('sub_appid', '');
+        }
+
+        return $config[$this->getConfigKey()] ?? '';
+    }
+
+    protected function getConfigKey(): string
+    {
+        return 'mp_app_id';
     }
 }

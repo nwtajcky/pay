@@ -4,15 +4,23 @@ declare(strict_types=1);
 
 namespace Yansongda\Pay\Plugin\Wechat\Fund\Transfer;
 
+use function Yansongda\Pay\encrypt_wechat_contents;
+use function Yansongda\Pay\get_wechat_config;
+
 use Yansongda\Pay\Pay;
 use Yansongda\Pay\Plugin\Wechat\GeneralPlugin;
 use Yansongda\Pay\Rocket;
-use Yansongda\Supports\Config;
+use Yansongda\Pay\Traits\HasWechatEncryption;
+use Yansongda\Supports\Collection;
 
+/**
+ * @see https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter4_3_1.shtml
+ */
 class CreatePlugin extends GeneralPlugin
 {
+    use HasWechatEncryption;
+
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\InvalidConfigException
      * @throws \Yansongda\Pay\Exception\InvalidParamsException
@@ -22,20 +30,12 @@ class CreatePlugin extends GeneralPlugin
     protected function doSomething(Rocket $rocket): void
     {
         $params = $rocket->getParams();
-        $config = get_wechat_config($params);
-
-        $extra = $this->getWechatId($config);
+        $extra = $this->getWechatId($params, $rocket->getPayload());
 
         if (!empty($params['transfer_detail_list'][0]['user_name'] ?? '')) {
-            if (empty($config->get('wechat_public_cert_path'))) {
-                reload_wechat_public_certs($params);
-            }
+            $params = $this->loadSerialNo($params);
 
-            if (empty($params['_serial_no'])) {
-                mt_srand();
-                $params['_serial_no'] = strval(array_rand($config->get('wechat_public_cert_path')));
-                $rocket->setParams($params);
-            }
+            $rocket->setParams($params);
 
             $extra['transfer_detail_list'] = $this->getEncryptUserName($params);
         }
@@ -53,15 +53,26 @@ class CreatePlugin extends GeneralPlugin
         return 'v3/partner-transfer/batches';
     }
 
-    protected function getWechatId(Config $config): array
+    /**
+     * @throws \Yansongda\Pay\Exception\ContainerException
+     * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
+     */
+    protected function getWechatId(array $params, Collection $payload): array
     {
+        $config = get_wechat_config($params);
+        $key = ($params['_type'] ?? 'mp').'_app_id';
+
+        if ('app_app_id' === $key) {
+            $key = 'app_id';
+        }
+
         $appId = [
-            'appid' => $config->get('mp_app_id'),
+            'appid' => $payload->get('appid', $config[$key] ?? ''),
         ];
 
-        if (Pay::MODE_SERVICE == $config->get('mode')) {
+        if (Pay::MODE_SERVICE === ($config['mode'] ?? null)) {
             $appId = [
-                'sub_mchid' => $config->get('sub_mch_id', ''),
+                'sub_mchid' => $payload->get('sub_mchid', $config['sub_mch_id'] ?? ''),
             ];
         }
 
@@ -69,18 +80,17 @@ class CreatePlugin extends GeneralPlugin
     }
 
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\InvalidParamsException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
     protected function getEncryptUserName(array $params): array
     {
-        $serialNo = $params['_serial_no'] ?? '';
         $lists = $params['transfer_detail_list'] ?? [];
+        $publicKey = $this->getPublicKey($params, $params['_serial_no'] ?? '');
 
         foreach ($lists as $key => $list) {
-            $lists[$key]['user_name'] = encrypt_wechat_contents($params, $list['user_name'], $serialNo);
+            $lists[$key]['user_name'] = encrypt_wechat_contents($list['user_name'], $publicKey);
         }
 
         return $lists;

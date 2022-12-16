@@ -16,16 +16,16 @@ use Yansongda\Pay\Plugin\ParserPlugin;
 use Yansongda\Pay\Plugin\Wechat\CallbackPlugin;
 use Yansongda\Pay\Plugin\Wechat\LaunchPlugin;
 use Yansongda\Pay\Plugin\Wechat\PreparePlugin;
-use Yansongda\Pay\Plugin\Wechat\SignPlugin;
+use Yansongda\Pay\Plugin\Wechat\RadarSignPlugin;
 use Yansongda\Supports\Collection;
 use Yansongda\Supports\Str;
 
 /**
- * @method ResponseInterface app(array $order)  APP 支付
- * @method Collection        mini(array $order) 小程序支付
- * @method Collection        mp(array $order)   公众号支付
- * @method Collection        scan(array $order) 扫码支付
- * @method ResponseInterface wap(array $order)  H5 支付
+ * @method Collection app(array $order)  APP 支付
+ * @method Collection mini(array $order) 小程序支付
+ * @method Collection mp(array $order)   公众号支付
+ * @method Collection scan(array $order) 扫码支付
+ * @method Collection wap(array $order)  H5 支付
  */
 class Wechat extends AbstractProvider
 {
@@ -40,12 +40,11 @@ class Wechat extends AbstractProvider
     ];
 
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
+     * @return \Psr\Http\Message\MessageInterface|\Yansongda\Supports\Collection|array|null
+     *
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\InvalidParamsException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
-     *
-     * @return \Psr\Http\Message\MessageInterface|\Yansongda\Supports\Collection|array|null
      */
     public function __call(string $shortcut, array $params)
     {
@@ -58,12 +57,11 @@ class Wechat extends AbstractProvider
     /**
      * @param array|string $order
      *
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
+     * @return array|\Yansongda\Supports\Collection
+     *
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\InvalidParamsException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
-     *
-     * @return array|\Yansongda\Supports\Collection
      */
     public function find($order)
     {
@@ -87,7 +85,6 @@ class Wechat extends AbstractProvider
     /**
      * @param array|string $order
      *
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\InvalidParamsException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
@@ -102,12 +99,11 @@ class Wechat extends AbstractProvider
     }
 
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
+     * @return array|\Yansongda\Supports\Collection
+     *
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\InvalidParamsException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
-     *
-     * @return array|\Yansongda\Supports\Collection
      */
     public function refund(array $order)
     {
@@ -119,16 +115,14 @@ class Wechat extends AbstractProvider
     /**
      * @param array|\Psr\Http\Message\ServerRequestInterface|null $contents
      *
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\InvalidParamsException
-     * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
     public function callback($contents = null, ?array $params = null): Collection
     {
-        Event::dispatch(new Event\CallbackReceived('wechat', $contents, $params, null));
-
         $request = $this->getCallbackParams($contents);
+
+        Event::dispatch(new Event\CallbackReceived('wechat', clone $request, $params, null));
 
         return $this->pay(
             [CallbackPlugin::class], ['request' => $request, 'params' => $params]
@@ -149,7 +143,7 @@ class Wechat extends AbstractProvider
         return array_merge(
             [PreparePlugin::class],
             $plugins,
-            [SignPlugin::class],
+            [RadarSignPlugin::class],
             [LaunchPlugin::class, ParserPlugin::class],
         );
     }

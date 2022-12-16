@@ -1,8 +1,9 @@
 <p align="center">
-      <a href="https://pay.yansongda.cn" target="_blank" rel="noopener noreferrer"><img width="200" src="https://cdn.jsdelivr.net/gh/yansongda/pay-site/.vuepress/public/images/logo.png" alt="Logo"></a>
+      <a href="https://pay.yansongda.cn" target="_blank" rel="noopener noreferrer"><img width="200" src="https://pay.yansongda.cn/images/logo.png" alt="Logo"></a>
 </p>
 
 <p align="center">
+    <a href="https://codecov.io/gh/yansongda/pay" ><img src="https://codecov.io/gh/yansongda/pay/branch/master/graph/badge.svg?token=tYMV0YT5jj"/></a>
     <a href="https://scrutinizer-ci.com/g/yansongda/pay/?branch=master"><img src="https://scrutinizer-ci.com/g/yansongda/pay/badges/quality-score.png?b=master" alt="scrutinizer"></a>
     <a href="https://github.com/yansongda/pay/actions"><img src="https://github.com/yansongda/pay/workflows/Linter/badge.svg" alt="Linter Status"></a>
     <a href="https://github.com/yansongda/pay/actions"><img src="https://github.com/yansongda/pay/workflows/Tester/badge.svg" alt="Tester Status"></a>
@@ -38,10 +39,10 @@ yii 扩展包请 [传送至这里](https://github.com/guanguans/yii-pay)
 - 文件结构清晰易理解，可以随心所欲添加本项目中没有的支付网关
 - 方法使用更优雅，不必再去研究那些奇怪的的方法名或者类名是做啥用的
 - 内置自动获取微信公共证书方法，再也不用再费劲去考虑第一次获取证书的的问题了
-- 符合 PSR2、PSR3、PSR4、PSR7、PSR11、PSR14 等各项标准，你可以各种方便的与你的框架集成
+- 符合 PSR2、PSR3、PSR4、PSR7、PSR11、PSR14、PSR18 等各项标准，你可以各种方便的与你的框架集成
 
 ## 运行环境
-- PHP 7.3+
+- PHP 7.3+ (v3.1.0 开始需 7.4+)
 - composer
 
 ## 详细文档
@@ -50,7 +51,7 @@ yii 扩展包请 [传送至这里](https://github.com/guanguans/yii-pay)
 
 ## 支持的支付方法
 
-yansongda/pay 100% 兼容 支付宝/微信 所有功能（包括服务商功能），只需通过「插件机制」引入即可。
+yansongda/pay 100% 兼容 支付宝/微信/银联 所有功能（包括服务商功能），只需通过「插件机制」引入即可。
 
 同时，SDK 直接支持内置了以下插件，详情请查阅文档。
 
@@ -77,9 +78,17 @@ yansongda/pay 100% 兼容 支付宝/微信 所有功能（包括服务商功能�
 - ~~普通红包，微信v3版暂不支持，计划后续内置支持v2版，或直接使用 Pay v2 版本~~
 - ~~分裂红包，微信v3版暂不支持，计划后续内置支持v2版，或直接使用 Pay v2 版本~~
 
+### 银联
+
+- 手机网站支付
+- 电脑网站支付
+- 刷卡支付
+- 扫码支付
+- ...
+
 ## 安装
 ```shell
-composer require yansongda/pay:~3.0.0 -vvv
+composer require yansongda/pay:~3.2.0 -vvv
 ```
 
 ## 深情一撇
@@ -109,6 +118,8 @@ class AlipayController
                 'alipay_root_cert_path' => '/Users/yansongda/pay/cert/alipayRootCert.crt',
                 'return_url' => 'https://yansongda.cn/alipay/return',
                 'notify_url' => 'https://yansongda.cn/alipay/notify',
+                // 选填-第三方应用授权token
+                'app_auth_token' => '',
                 // 选填-服务商模式下的服务商 id，当 mode 为 Pay::MODE_SERVICE 时使用该参数
                 'service_provider_id' => '',
                 // 选填-默认为正常模式。可选为： MODE_NORMAL, MODE_SANDBOX, MODE_SERVICE
@@ -184,7 +195,7 @@ class WechatController
     protected $config = [
         'wechat' => [
             'default' => [
-                // 必填-商户号，服务商模式下为服务商商户号
+                // 必填-商户号
                 'mch_id' => '',
                 // 必填-商户秘钥
                 'mch_secret_key' => '',
@@ -195,7 +206,7 @@ class WechatController
                 // 必填
                 'notify_url' => 'https://yansongda.cn/wechat/notify',
                 // 选填-公众号 的 app_id
-                'mp_app_id' => '2016082000291234',
+                'mp_app_id' => '',
                 // 选填-小程序 的 app_id
                 'mini_app_id' => '',
                 // 选填-app 的 app_id
@@ -212,9 +223,9 @@ class WechatController
                 'sub_mini_app_id' => '',
                 // 选填-服务商模式下，子商户id
                 'sub_mch_id' => '',
-                // 选填-微信公钥证书路径, optional，强烈建议 php-fpm 模式下配置此参数
+                // 选填-微信平台公钥证书路径, optional，强烈建议 php-fpm 模式下配置此参数
                 'wechat_public_cert_path' => [
-                    '45F59D4DABF31918AFCEC556D5D2C6E376675D57' => __DIR__.'/Cert/wechatPublicKey.crt',
+                    '45F59D4DABF31918AFCEC556D5D2C6E376675D57' => __DIR__.'/Cert/wechatpay_45F***D57.pem',
                 ],
                 // 选填-默认为正常模式。可选为： MODE_NORMAL, MODE_SERVICE
                 'mode' => Pay::MODE_NORMAL,
@@ -237,10 +248,14 @@ class WechatController
     public function index()
     {
         $order = [
-            'out_trade_no' => time(),
-            'total_fee' => '1', // **单位：分**
-            'body' => 'test body - 测试',
-            'openid' => 'onkVf1FjWS5SBIixxxxxxx',
+            'out_trade_no' => time().'',
+            'description' => 'subject-测试',
+            'amount' => [
+                 'total' => 1,
+            ],
+            'payer' => [
+                 'openid' => 'onkVf1FjWS5SBxxxxxxxx',
+            ],
         ];
 
         $pay = Pay::wechat($this->config)->mp($order);

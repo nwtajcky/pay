@@ -11,12 +11,14 @@ use Yansongda\Pay\Parser\ResponseParser;
 use Yansongda\Pay\Rocket;
 use Yansongda\Pay\Traits\SupportServiceProviderTrait;
 
+/**
+ * @see https://opendocs.alipay.com/open/02ivbs?scene=common
+ */
 class WapPayPlugin implements PluginInterface
 {
     use SupportServiceProviderTrait;
 
     /**
-     * @throws \Yansongda\Pay\Exception\ContainerDependencyException
      * @throws \Yansongda\Pay\Exception\ContainerException
      * @throws \Yansongda\Pay\Exception\ServiceNotFoundException
      */
@@ -24,7 +26,7 @@ class WapPayPlugin implements PluginInterface
     {
         Logger::info('[alipay][WapPayPlugin] 插件开始装载', ['rocket' => $rocket]);
 
-        $this->loadServiceProvider($rocket);
+        $this->loadAlipayServiceProvider($rocket);
 
         $rocket->setDirection(ResponseParser::class)
             ->mergePayload([
